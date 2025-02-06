@@ -22,7 +22,7 @@ fn main() {
 	}
 	ma.engine_listener_set_position(engine, 0, 0, 0, 0)
 	// ma.engine_listener_set_direction(engine, 0, 0, 0, 0)
-	ma.engine_listener_set_cone(engine, 0, 0.25, 3, 0.5)
+	ma.engine_listener_set_cone(engine, 0, 1, 3, 0.5)
 
 	// Sound
 	sound := ma.Sound{}
