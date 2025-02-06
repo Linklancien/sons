@@ -1,3 +1,3 @@
-need the module miniaudio
+need the module miniaudio:
 
-install miniaudio
+"v install https://github.com/larpon/miniaudio"
