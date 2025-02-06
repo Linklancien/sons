@@ -22,7 +22,7 @@ fn main() {
 	}
 	ma.engine_listener_set_position(engine, 0, 0, 0, 0)
 	// ma.engine_listener_set_direction(engine, 0, 0, 0, 0)
-	ma.engine_listener_set_cone(engine, 0, 1, 1, 0.5)
+	ma.engine_listener_set_cone(engine, 0, 0.25, 3, 0.5)
 
 	// Sound
 	sound := ma.Sound{}
@@ -43,8 +43,8 @@ fn main() {
 		time.sleep(100 * time.millisecond)
 		// ma.sound_set_volume(&sound, 1)
 		// println(ma.sound_get_volume(&sound))
-		t += 0.1
-		println("$t, ${2*m.sin(t)}, ${2*m.cos(t)} ")
+		t += 0.05
+		// println("$t, ${2*m.sin(t)}, ${2*m.cos(t)} ")
 		ma.sound_set_position(sound, f32(2*m.sin(t)), 0, f32(2*m.cos(t)))
 	}
 	
