@@ -57,19 +57,16 @@ fn main() {
 	// Sound
 	app.sounds[0] = ma.Sound{}
 
-	sound := &app.sounds[0]
-
-	if ma.sound_init_from_file(app.engine, wav_file.str, 0, ma.null, ma.null, &sound) != .success {
+	if ma.sound_init_from_file(app.engine, wav_file.str, 0, ma.null, ma.null, &app.sounds[0]) != .success {
 		panic('Failed to load and play "${wav_file}".')
 	}
 	
 	println("playing ${wav_file}")
 
-	ma.sound_set_pinned_listener_index(sound, 0)
-	// ma.sound_set_pan(sound, 1)
-	ma.sound_set_position(sound, 0, 0, 3)
+	ma.sound_set_pinned_listener_index(app.sounds[0], 0)
+	ma.sound_set_position(app.sounds[0], 0, 0, 0)
 
-	ma.sound_start(&sound)
+	// ma.sound_start(&app.sounds[0])
 	
 	// background
 	app.background = app.ctx.create_image(os.join_path(app.basedir, 'back.jpg'))!
@@ -87,11 +84,14 @@ fn on_init(mut app App){
 
 fn on_frame(mut app App){
 	if ma.sound_at_end(&app.sounds[0]) != 1{
-		time.sleep(100 * time.millisecond)
-		// ma.sound_set_volume(&sound, 1)
-		// println(ma.sound_get_volume(&sound))
-		// println("$t, ${2*m.sin(t)}, ${2*m.cos(t)} ")
+		println(ma.sound_get_time_in_pcm_frames(&app.sounds[0]))
 	}
+	
+	// 	time.sleep(100 * time.millisecond)
+	// 	ma.sound_set_volume(&sound, 1)
+	// 	println(ma.sound_get_volume(&sound))
+	// 	println("$t, ${2*m.sin(t)}, ${2*m.cos(t)} ")
+	// }
 
 	app.ctx.begin()
 	app.ctx.draw_image(0, 0, app.ctx.width, app.ctx.height, app.background)
@@ -109,6 +109,23 @@ fn on_event(e &gg.Event, mut app App){
 				.escape{
 					app.exit()
 				}
+				.space{
+					
+					if ma.sound_is_playing(app.sounds[0]) == 1{
+						ma.sound_stop(&app.sounds[0])
+						print('Pause')
+					}
+					else{
+						ma.sound_start(&app.sounds[0])
+						print("Start")
+					}
+				}
+				.left{
+
+				}
+				.right{
+					
+				}
 				else{}
 			}
 		}
@@ -120,6 +137,7 @@ fn (app App) exit(){
 	// Déconnexion
 	ma.engine_uninit(app.engine)
 	for sound in app.sounds{
+		ma.sound_stop(&sound)
 		ma.sound_uninit(sound)
 	}
 	app.ctx.quit()
