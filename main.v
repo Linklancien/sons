@@ -1,20 +1,26 @@
 module main
 
 import os
-import time
+// import time
+import math as mx
 import miniaudio as ma
 import gg
 
-const bg_color = gg.Color{0, 0, 0, 0}
+const bg_color	= gg.Color{0, 0, 0, 0}
+const five_second	= 480*5*60
+const tour	= mx.pi/32
 
 struct App {
 	mut:
 	ctx		&gg.Context = unsafe { nil }
 
 	// Sons
-	engine	&ma.Engine
-	sounds	[]ma.Sound	=	[ma.Sound{}]
+	engine	ma.Engine	= ma.Engine{}
+	sounds	[]ma.Sound	= [ma.Sound{}]
+	sounds_len	[]u64
 
+	// Prams
+	angle	f64	= 0.0
 	// Files
 	basedir string
 
@@ -39,19 +45,17 @@ fn main() {
 	)
 
 	app.basedir = os.real_path(os.join_path(os.dir(@FILE)))
-	wav_file := os.join_path(app.basedir, 'audio.flac')
+	wav_file := os.join_path(app.basedir, 'audio.mp3')
 
 	// mut engineconfig := ma.engine_config_init()
 	// engineconfig.noDevice   = ma.true
 	// engineconfig.channels   = 2        // Must be set when not using a device.
 	// engineconfig.sampleRate = 48000    // Must be set when not using a device.
 
-	result := ma.engine_init(ma.null, app.engine)
-	if result != .success {
+	if ma.engine_init(ma.null, app.engine) != .success {
 		panic('Failed to initialize audio engine.')
 	}
 	ma.engine_listener_set_position(app.engine, 0, 0, 0, 0)
-	// ma.engine_listener_set_direction(app.gg.engine, 0, 0, 0, 0)
 	ma.engine_listener_set_cone(app.engine, 0, 1, 3, 0.5)
 
 	// Sound
@@ -64,15 +68,25 @@ fn main() {
 	println("playing ${wav_file}")
 
 	ma.sound_set_pinned_listener_index(app.sounds[0], 0)
-	ma.sound_set_position(app.sounds[0], 0, 0, 0)
-
-	// ma.sound_start(&app.sounds[0])
+	ma.sound_set_position(app.sounds[0], 0, 0, 2)
 	
+	mut length := u64(0)
+	app.sounds_len = []u64{len: app.sounds.len,init: 0}
+	for ind in 0..app.sounds.len{
+		if ma.sound_get_length_in_pcm_frames(&app.sounds[0], &length) != .success {
+			panic('Failed to retrieve the length.') // Failed to retrieve the length.
+		}
+		app.sounds_len[ind] = length
+	}
+
 	// background
 	app.background = app.ctx.create_image(os.join_path(app.basedir, 'back.jpg'))!
 
-
+	// Real start
+	println("Start")
 	app.ctx.run()
+
+	// End
 	app.exit()
 }
 
@@ -83,18 +97,19 @@ fn on_init(mut app App){
 }
 
 fn on_frame(mut app App){
-	if ma.sound_at_end(&app.sounds[0]) != 1{
-		println(ma.sound_get_time_in_pcm_frames(&app.sounds[0]))
-	}
-	
-	// 	time.sleep(100 * time.millisecond)
-	// 	ma.sound_set_volume(&sound, 1)
-	// 	println(ma.sound_get_volume(&sound))
-	// 	println("$t, ${2*m.sin(t)}, ${2*m.cos(t)} ")
-	// }
+	x := mx.cos(app.angle)
+	z := mx.sin(app.angle)
+	ma.engine_listener_set_direction(app.gg.engine, 0, x, 0, z)
 
+	// Front
 	app.ctx.begin()
 	app.ctx.draw_image(0, 0, app.ctx.width, app.ctx.height, app.background)
+	app.ctx.draw_rounded_rect_filled(5, app.ctx.height - 25, app.ctx.width - 10, 20, 10, gg.Color{0, 0, 0, 255})
+	app.ctx.draw_rounded_rect_filled(10, app.ctx.height - 20, app.ctx.width - 20, 10, 5, gg.Color{122, 122, 122, 255})
+
+	// Progresse
+	taille := int((app.ctx.width - 20)*(f64(ma.sound_get_time_in_pcm_frames(&app.sounds[0]))/f64(app.sounds_len[0])))
+	app.ctx.draw_rounded_rect_filled(10, app.ctx.height - 20, taille, 10, 5, gg.Color{255, 0, 0, 255})
 	app.ctx.end()
 }
 
@@ -113,18 +128,37 @@ fn on_event(e &gg.Event, mut app App){
 					
 					if ma.sound_is_playing(app.sounds[0]) == 1{
 						ma.sound_stop(&app.sounds[0])
-						print('Pause')
+						println('Pause')
 					}
 					else{
 						ma.sound_start(&app.sounds[0])
-						print("Start")
+						println("Play")
 					}
 				}
 				.left{
-
+					if ma.sound_get_time_in_pcm_frames(&app.sounds[0]) > five_second{
+						ma.sound_seek_to_pcm_frame(app.sounds[0], ma.sound_get_time_in_pcm_frames(&app.sounds[0]) - five_second)
+					}
+					else{
+						ma.sound_seek_to_pcm_frame(app.sounds[0], 0)
+					}
 				}
 				.right{
-					
+					if ma.sound_get_time_in_pcm_frames(&app.sounds[0])  + five_second < app.sounds_len[0]{
+						ma.sound_seek_to_pcm_frame(app.sounds[0], ma.sound_get_time_in_pcm_frames(&app.sounds[0]) + five_second)
+					}
+					else{
+						ma.sound_seek_to_pcm_frame(app.sounds[0], 0)
+					}
+				}
+				.t{
+					app.angle += tour
+				}
+				.y{
+					app.angle = 0
+				}
+				.u{
+					app.angle -= tour
 				}
 				else{}
 			}
@@ -135,11 +169,12 @@ fn on_event(e &gg.Event, mut app App){
 
 fn (app App) exit(){
 	// Déconnexion
-	ma.engine_uninit(app.engine)
 	for sound in app.sounds{
 		ma.sound_stop(&sound)
 		ma.sound_uninit(sound)
 	}
+
+	ma.engine_uninit(app.engine)
 	app.ctx.quit()
 	print("Quit")
 }
