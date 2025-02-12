@@ -127,7 +127,7 @@ fn on_frame(mut app App){
 
 	// Change
 	if ma.sound_at_end(app.sounds[app.is_playing]) == 1{
-		if app.is_playing < app.sounds.len{
+		if app.is_playing < app.sounds.len - 1{
 			app.is_playing += 1
 		}
 		else{
