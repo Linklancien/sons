@@ -1,9 +1,9 @@
-#Intro:
+# Intro:
 This project is in V and need the module miniaudio:
 
 ``v install https://github.com/larpon/miniaudio``
 
-#Commands:
+# Commands:
 escape: close the app
 space:  pause
 
