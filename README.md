@@ -8,9 +8,12 @@ escape: close the app
 space:  pause
 
 right:  +5s
+
 left:   -5s
 
 t:  rotate the sound left to right
+
 y:  set the sound in front of you
+
 u:  rotate the sound left to right
 
