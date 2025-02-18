@@ -15,5 +15,5 @@ t:  rotate the sound left to right
 
 y:  set the sound in front of you
 
-u:  rotate the sound left to right
+u:  rotate the sound right to left
 
