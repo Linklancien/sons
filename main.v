@@ -5,12 +5,36 @@ import os
 import math as mx
 import miniaudio as ma
 import gg
+import gx
 import arrays
 const bg_color	= gg.Color{0, 0, 0, 0}
 const five_second	= 480*5*60
 const tour		= mx.pi/32
 
 const ext_sound	= ["flac", "mp3"]
+
+const commands	= "escape: close the app \n
+space:  pause\n
+f:      fullscreen\n
+
+right:  +5s\n
+left:   -5s\n
+up:     V+\n
+down:   V-\n
+
+t:  rotate the sound left to right\n
+y:  set the sound in front of you\n
+u:  rotate the sound left to right\n
+
+i:  show help
+"
+const text_commands	= commands.split("\n")
+const text_config	= gx.TextCfg{
+		color:          gx.black
+		size:           20
+		align:          .left
+		vertical_align: .top
+	}
 
 struct App {
 	mut:
@@ -24,9 +48,13 @@ struct App {
 
 	is_playing	int
 
+	volume		f32	= 10
+
 	// Prams
 	angle	f64		= 0.0
 	pause	bool	= true
+
+	help	bool	= true
 
 	// Files
 	basedir string
@@ -64,6 +92,7 @@ fn main() {
 	}
 	ma.engine_listener_set_position(app.engine, 0, 0, 0, 0)
 	ma.engine_listener_set_cone(app.engine, 0, 1, 3, 0.5)
+	ma.sound_set_volume(app.sounds[app.is_playing], app.volume)
 
 	// Init sounds
 	mut names_list := []string{}
@@ -84,13 +113,8 @@ fn main() {
 		ma.sound_set_pinned_listener_index(app.sounds[i], 0)
 		ma.sound_set_position(app.sounds[i], 2, 0, 0)
 
-		// if i > 1{
-		// 	ma.data_source_set_next(&app.sounds[i - 1], &app.sounds[i])
-		// }
-
 		i += 1
 	}
-	// ma.data_source_set_next(&app.sounds[app.sounds.len - 1], &app.sounds[app.is_playing])
 
 	// length
 	mut length := u64(0)
@@ -133,6 +157,7 @@ fn on_frame(mut app App){
 		else{
 			app.is_playing = 0
 		}
+		ma.sound_set_volume(app.sounds[app.is_playing], app.volume)
 		ma.sound_seek_to_pcm_frame(app.sounds[app.is_playing], 0)
 		ma.sound_start(&app.sounds[app.is_playing])
 	}
@@ -153,6 +178,20 @@ fn on_frame(mut app App){
 
 		// Right
 		app.ctx.draw_rect_filled(mid_x + 5, mid_y - 30, 20, 40, gg.Color{122, 122, 122, 255})
+	}
+
+	// Affichage volume
+	app.ctx.draw_rect_filled(app.ctx.width - 65, 0, 65, 20, gg.Color{122, 122, 122, 255})
+	app.ctx.draw_text(app.ctx.width - 65, 0, "${int(app.volume)}/100", text_config)
+
+	// Affichage Commands
+	if app.help{
+		app.ctx.draw_rect_filled(0, 0, 250, 10 + 10*text_commands.len, gg.Color{122, 122, 122, 255})
+		mut n := 0
+		for txt in text_commands{
+			app.ctx.draw_text(10, 10 + 10*n, txt, text_config)
+			n += 1
+		}
 	}
 
 	// Progresse
@@ -201,6 +240,18 @@ fn on_event(e &gg.Event, mut app App){
 						ma.sound_seek_to_pcm_frame(app.sounds[app.is_playing], 0)
 					}
 				}
+				.up{
+					if app.volume < 100{
+						app.volume += 1
+						ma.sound_set_volume(app.sounds[app.is_playing], app.volume)
+					}
+				}
+				.down{
+					if app.volume > 1{
+						app.volume -= 1
+						ma.sound_set_volume(app.sounds[app.is_playing], app.volume)
+					}
+				}
 				.t{
 					app.angle += tour
 				}
@@ -209,6 +260,12 @@ fn on_event(e &gg.Event, mut app App){
 				}
 				.u{
 					app.angle -= tour
+				}
+				.i{
+					app.help = !app.help
+				}
+				.f{
+					gg.toggle_fullscreen()
 				}
 				else{}
 			}
